@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Earthquakes d3</title>
+
+   
+    <link href='https://api.tiles.mapbox.com/mapbox-gl-js/v0.53.1/mapbox-gl.css' rel='stylesheet' />
+    <link href="node_modules\font-awesome\css\font-awesome.min.css" rel="stylesheet">
+    <link href='style/map.css' rel='stylesheet' />
+    
+</head>
+<body>
+    <div class="btn-container">
+        <button id="mapbtn" class="b-ready buttons toggleview"><i class="fa fa-map fa-lg"></i></button>
+		<button id="chart" class="b-ready buttons toggleview"><i class="fa fa-line-chart fa-lg"></i></button>
+        <button id="play" class="b-ready buttons toggleview"><i class="fa fa-play fa-lg"></i></button>
+        <button id="cluster" class="buttons"><i class="fa fa-circle fa-lg"></i>
+            <div id="progress"></div>
+        </button>
+
+    </div>
+	<div id="canvasContainer">
+		<canvas id="canvas">Canvas isn't supported</canvas>
+	</div>
+    
+
+    <script src="node_modules/d3/dist/d3.min.js"></script>
+	<script src="node_modules/mappa-mundi/dist/mappa.js"></script>
+	 <script src='./dist/bundle.js'></script>
+    
+</body>
+</html>

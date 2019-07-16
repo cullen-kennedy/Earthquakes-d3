@@ -1,0 +1,22 @@
+{
+    "version": "1.0.0",
+    "name": "ww2map",
+    "private": true,
+    "scripts": {
+        "build": "webpack",
+        "serve": "node server.js"
+    },
+    "dependencies": {
+        "d3": "^5.9.7",
+        "express": "^4.17.1",
+        "font-awesome": "^4.7.0",
+        "mappa-mundi": "0.0.5"
+    },
+    "devDependencies": {
+        "@babel/core": "^7.4.4",
+        "@babel/preset-env": "^7.4.4",
+        "babel-loader": "^8.0.6",
+        "webpack": "^4.35.2",
+        "webpack-cli": "^3.3.5"
+    }
+}
