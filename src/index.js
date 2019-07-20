@@ -8,7 +8,7 @@ var myMap, canvas, view = 'mapbtn'
 var x, y
 var svg, chartview, chartx, charty; 
 const margin = 50;
-const colormap = {5: "blue",6: "green",7:"yellow",8:"orange",9:"red"}
+const colormap = {5: "white",6: "green",7:"yellow",8:"orange",9:"red"}
 
          
 window.addEventListener('load', load);
@@ -44,11 +44,11 @@ function load()
         lat: 0,
         lng: 0,
         zoom: 1,
-        width: window.screen.availWidth * 0.90,
-        height: window.screen.availHeight * 0.90,
+        width: (window.screen.availWidth * 0.90 > 1280) ? 1280 : window.screen.availWidth * 0.90,
+        height: (window.screen.availHeight * 0.90 > 1280) ? 1280 : window.screen.availHeight * 0.90,
         scale: 1,
         pitch: 1,
-        style: 'light-v8'
+        style: 'dark-v8'
     };
 
     //Set map var
@@ -58,27 +58,31 @@ function load()
 	let img = new Image();
     img.src = myMap.imgUrl;
 
-    //Set Canvas and canvas container to images dimensions
+
+
     img.onload = () => {
+        console.log(img.width + " " +img.height)
         canvasContainer.setAttribute("style", "width:" + img.width +"px;" + " height:"+img.height+"px;");
-		canvas.width = img.width;
-        canvas.height = img.height;
         ctx.imageSmoothingEnabled = false;
+        canvas.width = img.width;
+        canvas.height = img.height;
         ctx.drawImage(img, 0, 0);	
+        addPoints();
     }
+
 
     svg = d3.select(canvasContainer).append('svg')
 
-    //Change to domain
-    let beginDate = new Date("01/02/2000")
-    let endDate = new Date("12/30/2016")
+    //Change this to easier change the domains
+    let beginDate = new Date("01/01/2004")
+    let endDate = new Date("12/31/2011")
 
     //Setting chart scales, x and y are global
     //Linear scale is incorrect. Will be changed anyway
     x = d3.scaleTime()
     .domain([beginDate,endDate])
     y = d3.scaleLinear()
-    .domain([0,8800])
+    .domain([0,4519])
 
     //Setting the chart element
     chartview = svg.append("g")
@@ -89,20 +93,25 @@ function load()
                 "translate(" + margin + "," + 0 + ")")
                 
     //Setting the chart axis graphics
+    //Fill doesn't change the text color
     chartx = chartview.append("g")
         .attr("class", "x axis")
         .style('opacity', 0)
+        .style("fill", "white")
+        .style("stroke-width", 1)
       
     charty = chartview.append("g")
         .attr("class", "y axis")
         .style('opacity', 0)
+        .style("fill", "white")
+        .style("stroke-width", 1)
    
-   	addPoints();
+  
 }
 
 function addPoints()
 {
-    d3.csv('./csv/database.csv')
+    d3.csv('./csv/newFile.csv')
         .then((data) => {
             draw(data)
         })
@@ -123,15 +132,17 @@ function draw(data) {
 		.enter()
 		.append("circle")
     	.attr("r", function(d) {return Math.floor(d['Magnitude'] - 4)})
-    	.attr('fill', function(d) {return colormap[Math.floor(d['Magnitude'])]})
+        .attr('fill', function(d) {return colormap[Math.floor(d['Magnitude'])]})
+        .attr('opacity', 0.6)
     	.attr('class', function(d) {
         return Math.floor(d['Magnitude']);
     })
 
+    //Sending the wrong canvas dimensions sometimes
 	worker.postMessage({
 	    nodes: data,
-        width: canvas.width,	
-        height: canvas.height
+        width: canvas.getAttribute('width'),
+        height: canvas.getAttribute('height')
 	});
 
 	worker.onmessage = function(event) {
@@ -169,9 +180,7 @@ function update(transitionTime) {
 
     if (view === 'mapbtn') {
 
-
         axisOpacity(2, 0)
-
         svg.selectAll("circle")
         .each(function(d) {
 
@@ -184,6 +193,7 @@ function update(transitionTime) {
             .attr('visibility', 'visible')
             .transition()
             .duration(transitionTime)
+            .attr("r", function(d) {return Math.floor(d['Magnitude'] - 4)})
             .attr("cx", pos.x )
             .attr("cy", pos.y )
                
@@ -191,9 +201,7 @@ function update(transitionTime) {
         }) 
     }
     else if (view === 'play'){
-        /**
-         * Need to add timeline
-         */
+ 
         axisOpacity(2, 0)
 
         svg.selectAll('circle')
@@ -201,17 +209,33 @@ function update(transitionTime) {
             .duration(transitionTime)
             .attr('visibility', 'hidden')
             
+        
 
         svg.selectAll("circle").each(function(d, i) {
             circle = d3.select(this)
-			let pos = myMap.latLngToPixel(d['Latitude'], d['Longitude']);
+            let pos = myMap.latLngToPixel(d['Latitude'], d['Longitude']);
 
+            /**
+             * Showing dates along with this is a future project
+             * Tricky because everything is timed out
+             */
+         
             circle
             .attr("cx", pos.x)
             .attr("cy", pos.y)
             .transition()
-            .delay(50*i)
+            .duration((d) => {return Math.pow(Math.floor((d['Magnitude'])), 3.5)})
+            .delay(5*i)
+            .attr("r", function(d) {return Math.pow(Math.floor((d['Magnitude'] - 4)), 3)})
             .attr('visibility', 'visible')
+            .transition()
+            .duration((d) => {return Math.pow(Math.floor((d['Magnitude'])), 3.5)})
+            .attr("r",0)
+            .transition()
+            .attr('visibility', 'hidden')
+
+           
+
 
         })
       
@@ -243,6 +267,7 @@ function update(transitionTime) {
                 .attr('visibility', 'visible')
                 .transition()
                 .duration(transitionTime)
+                .attr("r", function(d) {return Math.floor(d['Magnitude'] - 4)})
                 .attr('cy', () => {return y(v++);})
                 .attr('cx', (d, i) => {
                     return x(new Date(d['Date']))
@@ -258,6 +283,7 @@ function update(transitionTime) {
             .attr('visibility', 'visible')
             .transition()
             .duration(transitionTime)
+            .attr("r", function(d) {return Math.floor(d['Magnitude'] - 4)})
 			.attr("cx", function(d) { return d.x; })
       		.attr("cy", function(d) { return d.y; })
     }	
@@ -269,13 +295,17 @@ function update(transitionTime) {
 }
 
 function toggleView() {
-   let lastbtn = document.getElementById(view)
-    lastbtn.style.backgroundColor = 'rgba(0,0,0,0.4)'
+    let lastbtn = document.getElementById(view)
+    lastbtn.style.backgroundColor = 'lightblue'
+
     view = event.target.id
+
     let currentbtn = document.getElementById(view)
     currentbtn.style.backgroundColor = '#6f7070'
     showView();
 }
+
+
 
 function showView() {
     if (view == "mapbtn") {

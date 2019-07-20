@@ -6,7 +6,7 @@ onmessage = function(event) {
   let height = event.data.height
 	
 
-  	this.console.log("loading clusters")
+  	this.console.log("loading cluster view")
 	//hardcoded in a margin
 
 	var simulation = d3.forceSimulation(nodes)
