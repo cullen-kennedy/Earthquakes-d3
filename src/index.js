@@ -35,17 +35,20 @@ function load()
     ctx = canvas.getContext("2d");
   
 	const mappa = new Mappa('Mapbox', key); 
-	
+    
     /**
-     * Options for map screen dimensions and letting mapbox 
-     * set the max allowable works for now - a little hacky
+     * Need to fix for mobile
      */
+
+    var screenwidth = Math.floor(window.screen.availWidth * 0.90)
+    var screenheight = Math.floor(window.screen.availHeight * 0.90)
+
     const options = {
         lat: 0,
         lng: 0,
         zoom: 1,
-        width: (window.screen.availWidth * 0.90 > 1280) ? 1280 : window.screen.availWidth * 0.90,
-        height: (window.screen.availHeight * 0.90 > 1280) ? 1280 : window.screen.availHeight * 0.90,
+        width: (screenwidth > 1280) ? 1280 : screenwidth,
+        height: (screenheight > 1280) ? 1280 : screenheight,
         scale: 1,
         pitch: 1,
         style: 'dark-v8'
