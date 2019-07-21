@@ -155,13 +155,14 @@ function draw(data) {
 	function ticked(data) {
         var progress = data.progress;
 
-        meter.style.width = 100 * progress + "%";
+        meter.style.width = 90 * progress + "%";
 	}
 
 	function ended(data) {
         var nodes = data.nodes
         var cluster = document.getElementById("cluster")
         cluster.addEventListener("click", toggleView);
+        cluster.setAttribute("class", "b-ready buttons toggleview hover")
 		
 		//Let circles remember their x and y cluster values
 		//Won't be very good if I need x or y later, but unlikely.
@@ -209,23 +210,25 @@ function update(transitionTime) {
             .duration(transitionTime)
             .attr('visibility', 'hidden')
             
-        
+        var dateshow = document.createElement("div")
+        canvasContainer.appendChild(dateshow)
+        dateshow.setAttribute("id", "dateshow");
 
         svg.selectAll("circle").each(function(d, i) {
             circle = d3.select(this)
             let pos = myMap.latLngToPixel(d['Latitude'], d['Longitude']);
 
-            /**
-             * Showing dates along with this is a future project
-             * Tricky because everything is timed out
-             */
+           /**
+            * Replace this timeout with just months and years
+            *  */ 
+            setTimeout(() => { dateshow.innerHTML = d['Date'] }, i*10);
          
             circle
             .attr("cx", pos.x)
             .attr("cy", pos.y)
             .transition()
             .duration((d) => {return Math.pow(Math.floor((d['Magnitude'])), 3.5)})
-            .delay(5*i)
+            .delay(10*i)
             .attr("r", function(d) {return Math.pow(Math.floor((d['Magnitude'] - 4)), 3)})
             .attr('visibility', 'visible')
             .transition()
@@ -296,12 +299,19 @@ function update(transitionTime) {
 
 function toggleView() {
     let lastbtn = document.getElementById(view)
-    lastbtn.style.backgroundColor = 'lightblue'
+    lastbtn.style.backgroundColor = 'black'
+    lastbtn.setAttribute("class", "b-ready buttons toggleview hover")
+
+    if (view === 'play') {
+        let dateshow = document.getElementById("dateshow")
+        canvasContainer.removeChild(dateshow)
+    }
 
     view = event.target.id
 
     let currentbtn = document.getElementById(view)
     currentbtn.style.backgroundColor = '#6f7070'
+    currentbtn.setAttribute("class", "b-ready buttons toggleview")
     showView();
 }
 
