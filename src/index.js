@@ -1,18 +1,16 @@
-//Description: Map of US naval losses during WWII
+//Description: Earthquakes during 2004 - 2011
 //Author: Cullen Kennedy
 /*Early Version*/
  
+//Some global vars
+var myMap, canvas, view = 'mapbtn', svg, x, y; 
+const margin = 50, colormap = {5: "white",6: "green",7:"yellow",8:"orange",9:"red"};
 
-//Clean these UP Somehow!
-var myMap, canvas, view = 'mapbtn'
-var x, y
-var svg, chartview, chartx, charty; 
-const margin = 50;
-const colormap = {5: "white",6: "green",7:"yellow",8:"orange",9:"red"}
-
-         
 window.addEventListener('load', load);
 
+/**
+ * Loads initial view and loads static map
+ */
 function load() 
 {
     //Sets the default button as chosen
@@ -20,10 +18,10 @@ function load()
     firstview.style.backgroundColor = '#6f7070'
 
     //Adds event listeners to all buttons except cluster
-    x = document.querySelectorAll(".toggleview")
+    let toggles = document.querySelectorAll(".toggleview")
     var i;
-    for (i = 0; i < x.length; i++) {
-        x[i].addEventListener('click', toggleView)
+    for (i = 0; i < toggles.length; i++) {
+        toggles[i].addEventListener('click', toggleView)
     }
 
     // Public access key
@@ -37,18 +35,15 @@ function load()
 	const mappa = new Mappa('Mapbox', key); 
     
     /**
-     * Need to fix for mobile
+     * Just keep it at a fixed standard size
+     * Too small and the whole map won't show anyway
      */
-
-    var screenwidth = Math.floor(window.screen.availWidth * 0.90)
-    var screenheight = Math.floor(window.screen.availHeight * 0.90)
-
     const options = {
         lat: 0,
         lng: 0,
         zoom: 1,
-        width: (screenwidth > 1280) ? 1280 : screenwidth,
-        height: (screenheight > 1280) ? 1280 : screenheight,
+        width: 1080,
+        height: 720,
         scale: 1,
         pitch: 1,
         style: 'dark-v8'
@@ -61,8 +56,6 @@ function load()
 	let img = new Image();
     img.src = myMap.imgUrl;
 
-
-
     img.onload = () => {
         console.log(img.width + " " +img.height)
         canvasContainer.setAttribute("style", "width:" + img.width +"px;" + " height:"+img.height+"px;");
@@ -70,48 +63,70 @@ function load()
         canvas.width = img.width;
         canvas.height = img.height;
         ctx.drawImage(img, 0, 0);	
-        addPoints();
+
+        //When image is loaded, it is time to draw svg
+        setupSVG()
     }
+}
 
-
-    svg = d3.select(canvasContainer).append('svg')
-
+/**
+ * Sets up the svg element over the canvas/map as well as the chart axis elements
+ */    
+function setupSVG() {
     //Change this to easier change the domains
     let beginDate = new Date("01/01/2004")
     let endDate = new Date("12/31/2011")
 
-    //Setting chart scales, x and y are global
-    //Linear scale is incorrect. Will be changed anyway
-    x = d3.scaleTime()
-    .domain([beginDate,endDate])
-    y = d3.scaleLinear()
-    .domain([0,4519])
+    //Domains are hardcoded
+    svg = d3.select(canvasContainer).append('svg')
 
     //Setting the chart element
-    chartview = svg.append("g")
+    let chartview = svg.append("g")
                 .attr("class", "charts")
                 .attr("height", canvas.height)
                 .attr("width", canvas.width)
                 .attr("transform", 
                 "translate(" + margin + "," + 0 + ")")
+
+    //x and y, used in update have global scope
+    x = d3.scaleTime()
+        .range([margin,canvas.width-margin])
+        .domain([beginDate,endDate])
+        
+    y = d3.scaleLinear()
+        .domain([0,4520])
+        .range([canvas.height-margin,margin])
                 
     //Setting the chart axis graphics
-    //Fill doesn't change the text color
-    chartx = chartview.append("g")
+    let chartx = chartview.append("g")
         .attr("class", "x axis")
         .style('opacity', 0)
         .style("fill", "white")
         .style("stroke-width", 1)
       
-    charty = chartview.append("g")
+    let charty = chartview.append("g")
         .attr("class", "y axis")
         .style('opacity', 0)
         .style("fill", "white")
         .style("stroke-width", 1)
+
+    let xAxis = d3.axisBottom(x)
+    let yAxis = d3.axisRight(y)
+
+    chartx
+        .attr("transform", "translate(" + -margin + "," + (canvas.height - margin) + ")")
+        .call(xAxis)
+
+    charty
+        .attr("transform", "translate(" + 0 + "," + 0 + ")")
+        .call(yAxis)    
    
-  
+    addPoints()
 }
 
+/**
+ * loads the data
+ */
 function addPoints()
 {
     d3.csv('./csv/newFile.csv')
@@ -123,7 +138,11 @@ function addPoints()
         })
 }
 
-
+/**
+ * Draws the actual circles on the map and runs the worker
+ * who sets the cluster positions
+ * @param data 
+ */
 function draw(data) {
 
     let meter = document.querySelector("#progress")
@@ -138,8 +157,8 @@ function draw(data) {
         .attr('fill', function(d) {return colormap[Math.floor(d['Magnitude'])]})
         .attr('opacity', 0.6)
     	.attr('class', function(d) {
-        return Math.floor(d['Magnitude']);
-    })
+            return Math.floor(d['Magnitude']);
+        })
 
     //Sending the wrong canvas dimensions sometimes
 	worker.postMessage({
@@ -157,7 +176,6 @@ function draw(data) {
 
 	function ticked(data) {
         var progress = data.progress;
-
         meter.style.width = 90 * progress + "%";
 	}
 
@@ -170,14 +188,17 @@ function draw(data) {
 		//Let circles remember their x and y cluster values
 		//Won't be very good if I need x or y later, but unlikely.
 		//Maybe find alternative
-		svg.selectAll('circle')
-		.data(nodes)
+		svg.selectAll('circle').data(nodes)
 	
 	}
     update();
 
 }
 
+/**
+ * Update sets mapview, chartview, play view or cluster view 
+ * @param transitionTime 
+ */
 function update(transitionTime) {   
 
     transitionTime = (typeof transitionTime !== 'undefined') ? transitionTime : 0
@@ -185,23 +206,17 @@ function update(transitionTime) {
     if (view === 'mapbtn') {
 
         axisOpacity(2, 0)
-        svg.selectAll("circle")
-        .each(function(d) {
-
+        svg.selectAll("circle").each(function(d) {
+           
             circle = d3.select(this)
-            lost = -110
-			
+
 			let pos = myMap.latLngToPixel(d['Latitude'], d['Longitude']);
-			
+
             circle
-            .attr('visibility', 'visible')
-            .transition()
-            .duration(transitionTime)
-            .attr("r", function(d) {return Math.floor(d['Magnitude'] - 4)})
-            .attr("cx", pos.x )
-            .attr("cy", pos.y )
-               
-          
+                .transition()
+                .duration(transitionTime)
+                .attr("cx", pos.x )
+                .attr("cy", pos.y )
         }) 
     }
     else if (view === 'play'){
@@ -210,117 +225,105 @@ function update(transitionTime) {
 
         svg.selectAll('circle')
             .transition()
-            .duration(transitionTime)
-            .attr('visibility', 'hidden')
+            .duration(0)
+            .attr("r",0)
             
         var dateshow = document.createElement("div")
-        canvasContainer.appendChild(dateshow)
-        dateshow.setAttribute("id", "dateshow");
+            canvasContainer.appendChild(dateshow)
+            dateshow.setAttribute("id", "dateshow");
 
         svg.selectAll("circle").each(function(d, i) {
             circle = d3.select(this)
             let pos = myMap.latLngToPixel(d['Latitude'], d['Longitude']);
 
-           /**
-            * Replace this timeout with just months and years
-            *  */ 
             setTimeout(() => { dateshow.innerHTML = d['Date'] }, i*10);
-         
+
+            //basically a delayed transition of radius from 0 to showing to 0 (size and duration depends on magnitude)
             circle
-            .attr("cx", pos.x)
-            .attr("cy", pos.y)
-            .transition()
-            .duration((d) => {return Math.pow(Math.floor((d['Magnitude'])), 3.5)})
-            .delay(10*i)
-            .attr("r", function(d) {return Math.pow(Math.floor((d['Magnitude'] - 4)), 3)})
-            .attr('visibility', 'visible')
-            .transition()
-            .duration((d) => {return Math.pow(Math.floor((d['Magnitude'])), 3.5)})
-            .attr("r",0)
-            .transition()
-            .attr('visibility', 'hidden')
-
-           
-
-
+                .attr("cx", pos.x)
+                .attr("cy", pos.y)
+                .transition()
+                .duration((d) => {return Math.pow(Math.floor((d['Magnitude'])), 3.5)})
+                .delay(10*i)
+                .attr("r", function(d) {return Math.pow(Math.floor((d['Magnitude'] - 4)), 3)})
+                .transition()
+                .duration((d) => {return Math.pow(Math.floor((d['Magnitude'])), 3.5)})
+                .attr("r",0)   
         })
       
     } 
-
+    //Chart view is simply time / frequency
     else if (view === 'chart') {
-        /**
-         * Needs improvement. A linear chart isn't very interesting
-         * Although the sharp increase after mag 9s is
-         */
-        x.range([margin,canvas.width-margin])
-        y.range([canvas.height-margin,margin])
-
-        let xAxis = d3.axisBottom(x)
-        let yAxis = d3.axisRight(y)
-
-        chartx
-            .attr("transform", "translate(" + -margin + "," + (canvas.height - margin) + ")")
-            .call(xAxis)
-
-        charty
-            .attr("transform", "translate(" + 0 + "," + 0 + ")")
-            .call(yAxis)
 
         axisOpacity(2, 1)
 
         let v = 0;    
             svg.selectAll('circle')
-                .attr('visibility', 'visible')
                 .transition()
                 .duration(transitionTime)
-                .attr("r", function(d) {return Math.floor(d['Magnitude'] - 4)})
                 .attr('cy', () => {return y(v++);})
                 .attr('cx', (d, i) => {
                     return x(new Date(d['Date']))
-                })
-        v = 0;      
+                })     
     }  
+    //Cluster View is setting cx, cy to d.x and d.y previously determined by the worker
     else if (view === 'cluster') {
 		
         axisOpacity(2, 0);
-
-				
+	
         svg.selectAll('circle')
-            .attr('visibility', 'visible')
             .transition()
             .duration(transitionTime)
-            .attr("r", function(d) {return Math.floor(d['Magnitude'] - 4)})
 			.attr("cx", function(d) { return d.x; })
       		.attr("cy", function(d) { return d.y; })
     }	
 
     /**
-     * Add View Depth 
-     * */	
-						 	
+     * Add Depth View maybe
+     * */							 	
 }
 
 function toggleView() {
+    
+    //default transitiontime
+    var transitionTime = 500
+    //reset colour and hover of last button
     let lastbtn = document.getElementById(view)
     lastbtn.style.backgroundColor = 'black'
     lastbtn.setAttribute("class", "b-ready buttons toggleview hover")
 
+    //If view was play, stop the delayed transitions, reset radius and visibility
+    //Also set transition time to next view to 0
     if (view === 'play') {
+
+        
         let dateshow = document.getElementById("dateshow")
         canvasContainer.removeChild(dateshow)
+
+        svg.selectAll("circle")
+        .each(function(d) {
+            d3.select(this)
+                .transition()
+                .duration(0)
+                .attr("r", function(d) {return Math.floor(d['Magnitude'] - 4)})
+                .attr('visibility', 'visible')       
+        })
+
+        transitionTime = 0;
     }
 
     view = event.target.id
-
+    //set color and activive on selected button
     let currentbtn = document.getElementById(view)
     currentbtn.style.backgroundColor = '#6f7070'
     currentbtn.setAttribute("class", "b-ready buttons toggleview")
-    showView();
+
+    showView(transitionTime);
 }
 
 
 
-function showView() {
+function showView(transitionTime) {
     if (view == "mapbtn") {
         showMap()
     }
@@ -333,9 +336,9 @@ function showView() {
     else if (view == "cluster") {
         hideMap()
     }
-    update(500)        
-}
 
+    update(transitionTime)        
+}
 
 function showMap() {
     mapOpacity(1);
@@ -345,10 +348,8 @@ function hideMap() {
     mapOpacity(0.5);
 }
 
-
 function mapOpacity(opacity) {
     canvas.style.opacity = opacity;
-  
 }
 
 function axisOpacity(axis, val) {
@@ -358,6 +359,7 @@ function axisOpacity(axis, val) {
         .duration(500)
         .style("opacity", val);
     }
+    //Was previously for other axis views. Not using this else condition
     else{
         d3.selectAll(".y")
         .transition()
@@ -368,7 +370,6 @@ function axisOpacity(axis, val) {
         .transition()
         .duration(500)
         .style("opacity", 1)
-
     }
 }
 
