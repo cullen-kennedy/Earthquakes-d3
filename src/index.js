@@ -285,31 +285,25 @@ function update(transitionTime) {
 
 function toggleView() {
     
-    //default transitiontime
-    var transitionTime = 500
     //reset colour and hover of last button
     let lastbtn = document.getElementById(view)
     lastbtn.style.backgroundColor = 'black'
     lastbtn.setAttribute("class", "b-ready buttons toggleview hover")
 
     //If view was play, stop the delayed transitions, reset radius and visibility
-    //Also set transition time to next view to 0
     if (view === 'play') {
 
-        
         let dateshow = document.getElementById("dateshow")
         canvasContainer.removeChild(dateshow)
 
         svg.selectAll("circle")
-        .each(function(d) {
+        .each(function() {
             d3.select(this)
                 .transition()
                 .duration(0)
                 .attr("r", function(d) {return Math.floor(d['Magnitude'] - 4)})
                 .attr('visibility', 'visible')       
         })
-
-        transitionTime = 0;
     }
 
     view = event.target.id
@@ -318,12 +312,12 @@ function toggleView() {
     currentbtn.style.backgroundColor = '#6f7070'
     currentbtn.setAttribute("class", "b-ready buttons toggleview")
 
-    showView(transitionTime);
+    showView();
 }
 
 
 
-function showView(transitionTime) {
+function showView() {
     if (view == "mapbtn") {
         showMap()
     }
@@ -336,8 +330,7 @@ function showView(transitionTime) {
     else if (view == "cluster") {
         hideMap()
     }
-
-    update(transitionTime)        
+    update(500)        
 }
 
 function showMap() {
